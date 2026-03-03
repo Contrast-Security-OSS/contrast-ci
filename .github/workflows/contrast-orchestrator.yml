@@ -103,7 +103,7 @@ on:
       CONTRAST_API_KEY:
         description: The contrast API key
         required: true
-      CONTRAST_AUTHORIZATION:
+      CONTRAST_AUTHORIZATION_KEY:
         description: The contrast authorization key
         required: true
       GH_TOKEN:
@@ -329,7 +329,7 @@ jobs:
           CONTRAST_ORG_ID:                   ${{ inputs.contrast_org_id }}
           CONTRAST_APP_INSTALLATION_ID:      ${{ inputs.contrast_app_install_id }}
           CONTRAST_API_KEY:                  ${{ secrets.CONTRAST_API_KEY }}
-          CONTRAST_AUTHORIZATION:            ${{ secrets.CONTRAST_AUTHORIZATION }}
+          CONTRAST_AUTHORIZATION:            ${{ secrets.CONTRAST_AUTHORIZATION_KEY }}
           GITHUB_SERVER_URL:                 ${{ inputs.repo_url }}
           GITHUB_REPOSITORY:                 ${{ inputs.repo_name }}
 
@@ -392,7 +392,7 @@ jobs:
           debug_mode:                 ${{ inputs.debug_mode }}
           aws_region:                 ${{ inputs.aws_region }}
           contrast_api_key:           ${{ secrets.CONTRAST_API_KEY }}
-          contrast_authorization_key: ${{ secrets.CONTRAST_AUTHORIZATION }}
+          contrast_authorization_key: ${{ secrets.CONTRAST_AUTHORIZATION_KEY }}
           github_token:               ${{ secrets.GH_TOKEN }}
           gemini_api_key:             ${{ secrets.GEMINI_API_KEY }}
           anthropic_api_key:          ${{ secrets.ANTHROPIC_API_KEY }}
