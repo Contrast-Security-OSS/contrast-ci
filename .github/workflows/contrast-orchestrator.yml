@@ -303,7 +303,7 @@ jobs:
           CONTRAST_AUTHORIZATION: ${{ secrets.CONTRAST_AUTHORIZATION_KEY }}
           RUN_TRIAGE: ${{ inputs.run_triage }}
           TRIAGE_DURATION: ${{ inputs.triage_duration || '' }}
-          APPLICATION_DIR: "$GITHUB_WORKSPACE"
+          APPLICATION_DIR: ${{ github.workspace }}
 
   # ─────────────────────────────────────────────────────────────────────
   # JOB 3: Run SmartSCA
