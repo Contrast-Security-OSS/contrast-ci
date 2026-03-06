@@ -300,7 +300,7 @@ jobs:
           CONTRAST_BASE_URL: ${{ inputs.contrast_host }}
           CONTRAST_ORG_ID: ${{ inputs.contrast_org_id }}
           CONTRAST_API_KEY: ${{ secrets.CONTRAST_API_KEY }}
-          CONTRAST_AUTH_TOKEN: ${{ secrets.CONTRAST_AUTHORIZATION_KEY }}
+          CONTRAST_AUTHORIZATION: ${{ secrets.CONTRAST_AUTHORIZATION_KEY }}
           RUN_TRIAGE: ${{ inputs.run_triage }}
           TRIAGE_DURATION: ${{ inputs.triage_duration || '' }}
           APPLICATION_DIR: "$GITHUB_WORKSPACE"
