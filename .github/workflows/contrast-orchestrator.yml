@@ -189,9 +189,9 @@ jobs:
           echo "GITHUB_WORKSPACE env var: $GITHUB_WORKSPACE"
 
       - name: Run Contrast Module Identifier
-        uses: docker://contrast/module-identifier
+        uses: docker://contrast/module-identifier:v1
         with:
-          args: "$GITHUB_WORKSPACE" --single --debug
+          args: /github/workspace --single --debug
         env:
           CONTRAST_HOST_NAME: ${{ inputs.contrast_host }}
           CONTRAST_ORG_ID: ${{ inputs.contrast_org_id }}
