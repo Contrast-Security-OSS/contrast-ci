@@ -339,25 +339,28 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run Contrast Code Static SCA Scanner
-        uses: docker://contrast/sca-smartai
-        with:
-          args: >-
-            scan /github/workspace --output /github/workspace/sbom.json --debug /github/workspace/sbom.debug
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-          CDXGEN_DEBUG_MODE: 'true'
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}:/var/app:rw \
+            -v /tmp:/tmp:rw \
+            -e GITHUB_TOKEN=${{ secrets.GH_TOKEN }} \
+            -e CDXGEN_DEBUG_MODE=true \
+            contrast/sca-smartai:latest \
+            scan /var/app --output /tmp/sbom.json --debug /tmp/sbom.debug
 
       - name: Archive SBOM results
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: sbom-output
-          path: /github/workspace/sbom*
+          path: /tmp/sbom*
 
       - name: Upload SBOM to Contrast
         run: |
-          ls -la /github/workspace/sbom.json
-          curl -v -X POST "${{ inputs.api_host }}/api/sca/v1/organizations/${{ inputs.contrast_org_id }}/sbom" -H "API-Key: ${{ secrets.CONTRAST_API_KEY }}" -H "Authorization: ${{ secrets.CONTRAST_AUTHORIZATION }}" -F "file=@/github/workspacep/sbom.json;type=application/json"
-
+          ls -la /tmp/sbom.json
+          curl -v -X POST "${{ inputs.api_host }}/api/sca/v1/organizations/${{ inputs.contrast_org_id }}/sbom" \
+            -H "API-Key: ${{ secrets.CONTRAST_API_KEY }}" \
+            -H "Authorization: ${{ secrets.CONTRAST_AUTHORIZATION }}" \
+            -F "file=@/tmp/sbom.json;type=application/json"
 
   # ─────────────────────────────────────────────────────────────────────
   # JOB 5: Run Contrast SmartFix
