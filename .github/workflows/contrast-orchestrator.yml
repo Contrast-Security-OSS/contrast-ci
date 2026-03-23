@@ -342,7 +342,7 @@ jobs:
         uses: docker://contrast/sca-smartai
         with:
           args: >-
-            contrast-sca scan /github/workspace --output /github/workspace/sbom.json --debug /github/workspace/sbom.debug
+            scan /github/workspace --output /github/workspace/sbom.json --debug /github/workspace/sbom.debug
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
           CDXGEN_DEBUG_MODE: 'true'
