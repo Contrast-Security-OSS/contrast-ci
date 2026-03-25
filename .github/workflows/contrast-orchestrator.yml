@@ -265,11 +265,7 @@ jobs:
       - detect-app-data
     if: |
       inputs.disable_contrast_code != 'true' &&
-      (
-        github.event_name == 'workflow_dispatch' ||
-        (github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'synchronize')) ||
-        (github.event_name == 'push' && github.ref == format('refs/heads/{0}', inputs.base_branch))
-      )
+      (github.event_name == 'push' && github.ref == format('refs/heads/{0}', inputs.base_branch))
     runs-on: ${{ inputs.github_runner }}
     steps:
       - name: Validate Application Name
@@ -332,7 +328,9 @@ jobs:
   run-sca:
     name: Code - Static SCA
     needs: detect-app-data
-    if: ${{ inputs.disable_contrast_sca != 'true' }}
+    if: |
+      inputs.disable_contrast_sca != 'true' &&
+      (github.event_name == 'push' && github.ref == format('refs/heads/{0}', inputs.base_branch))
     runs-on: ${{ inputs.github_runner }}
     steps:
       - name: Checkout Repository
