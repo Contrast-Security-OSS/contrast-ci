@@ -12,10 +12,6 @@ on:
         required: true
         type: string
         description: Contrast organization UUID
-      contrast_app_install_id:
-        required: true
-        type: string
-        description: Contrast GitHub App installation ID
 
       # --- Contrast Platform (optional override) ---
       contrast_application_id:
