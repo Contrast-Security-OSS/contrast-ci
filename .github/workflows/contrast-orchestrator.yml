@@ -102,8 +102,8 @@ on:
         description: 'The Azure API version'
         type: string
         default: ''
-      use_aws:
-        description: 'Whether to use AWS credentials configuration'
+      use_aws_creds_action:
+        description: 'Whether to use configure AWS credentials action'
         type: string
         default: 'false'
       aws_region:
@@ -186,7 +186,7 @@ jobs:
     steps:
       - name: Get Repository Languages
         id: get-repo-langs
-        uses: octokit/request-action@v2.4.0
+        uses: octokit/request-action@dad4362715b7fb2ddedf9772c8670824af564f0d # v2.4.0
         with:
           route: GET /repos/${{ inputs.repo_name }}/languages
         env:
@@ -235,12 +235,12 @@ jobs:
       contrast_app_name: ${{ steps.set-app-data-outputs.outputs.contrast_app_name }}
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Configure AWS Credentials
-        if: ${{ inputs.use_aws == 'true' && inputs.aws_region != '' }}
+        if: ${{ inputs.use_aws_creds_action == 'true' && inputs.aws_region != '' }}
         id: aws-credentials
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5.1.1
         with:
           output-credentials: true
           aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -317,11 +317,11 @@ jobs:
           fi
 
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       #- name: Configure AWS Credentials
-        #if: ${{ inputs.use_aws == 'true' && inputs.aws_region != '' }}
-        #uses: aws-actions/configure-aws-credentials@v5
+        #if: ${{ inputs.use_aws_creds_action == 'true' && inputs.aws_region != '' }}
+        #uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5.1.1
         #with:
           #aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           #aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -373,7 +373,7 @@ jobs:
     runs-on: ${{ inputs.github_runner }}
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Run Contrast Code Static SCA Scanner
         run: |
@@ -386,7 +386,7 @@ jobs:
             scan /var/app --output /tmp/sbom.json --debug /tmp/sbom.debug
 
       - name: Archive SBOM results
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: sbom-output
           path: /tmp/sbom*
@@ -439,8 +439,8 @@ jobs:
           fi
 
       - name: Configure AWS Credentials
-        if: ${{ inputs.use_aws == 'true' && inputs.aws_region != '' }}
-        uses: aws-actions/configure-aws-credentials@v5
+        if: ${{ inputs.use_aws_creds_action == 'true' && inputs.aws_region != '' }}
+        uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5.1.1
         with:
           output-env-credentials: true
           aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
