@@ -231,6 +231,11 @@ jobs:
           echo "Resolver output:"
           echo "$CONTRAST_CI_MANIFEST" | jq .
 
+          # Write manifest to step output so set-outputs can read it
+          echo "contrast_ci_manifest<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$CONTRAST_CI_MANIFEST" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
       - name: Set Contrast Application Data Outputs
         id: set-outputs
         shell: bash
@@ -455,7 +460,6 @@ jobs:
           contrast_org_id:            ${{ inputs.contrast_org_id }}
           contrast_app_id:            ${{ inputs.contrast_application_id }}
           contrast_app_ids:           ${{ needs.contrast-recon-resolve.outputs.contrast_app_ids }}
-          contrast_ci_manifest:       ${{ needs.contrast-recon-resolve.outputs.contrast_ci_manifest }}
           base_branch:                ${{ inputs.base_branch }}
           build_command:              ${{ inputs.build_command }}
           formatting_command:         ${{ inputs.formatting_command }}
