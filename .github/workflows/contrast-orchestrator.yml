@@ -377,6 +377,8 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Run Contrast Code Static SCA Scanner
+      # CONTRAST_CI_MANIFEST not yet supported by SCA container — uncomment when ready
+      # Add to docker run above: -e CONTRAST_CI_MANIFEST=${{ needs.contrast-recon-resolve.outputs.contrast_ci_manifest }}
         run: |
           docker run --rm \
             -v ${{ github.workspace }}:/var/app:rw \
@@ -385,8 +387,6 @@ jobs:
             -e CDXGEN_DEBUG_MODE=true \
             contrast/sca-smartai:latest \
             scan /var/app --output /tmp/sbom.json --debug /tmp/sbom.debug
-          # CONTRAST_CI_MANIFEST not yet supported by SCA container — uncomment when ready
-          # Add to docker run above: -e CONTRAST_CI_MANIFEST='${{ needs.contrast-recon-resolve.outputs.contrast_ci_manifest }}'
 
       - name: Archive SBOM results
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
