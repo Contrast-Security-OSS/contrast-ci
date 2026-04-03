@@ -214,9 +214,11 @@ jobs:
           GITHUB_DEFAULT_BRANCH: ${{ inputs.base_branch }}
         run: |
           CONTRAST_CI_MANIFEST=$(docker run --rm \
+            --user "$(id -u):$(id -g)" \
             -v "${{ github.workspace }}:/workspace" \
             contrast/contrast-recon:latest /workspace | \
           docker run --rm -i \
+            --user "$(id -u):$(id -g)" \
             -e CONTRAST_HOST_NAME \
             -e CONTRAST_ORG_ID \
             -e CONTRAST_API_KEY \
