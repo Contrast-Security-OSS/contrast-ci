@@ -163,7 +163,7 @@ jobs:
   # JOB 1: Resolve Applications via Contrast Recon + Resolver
   # Runs contrast-recon to discover repository modules, then pipes the
   # manifest to contrast-resolver to resolve modules to Contrast
-  # application IDs. Replaces the former module-identifier step.
+  # application IDs.
   # ─────────────────────────────────────────────────────────────────────
   contrast-recon-resolve:
     name: Resolve Applications
@@ -247,8 +247,8 @@ jobs:
           echo "$CONTRAST_CI_MANIFEST" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-          # CONTRAST_APP_IDS is written to $GITHUB_ENV by the resolver container.
-          # GitHub Actions injects it as an env var in subsequent steps.
+          # CONTRAST_APP_IDS is written to $GITHUB_ENV by the resolver container,
+          # pipe this to $$GITHUB_OUTPUT for use in later jobs 
           if [[ -n "$CONTRAST_APP_IDS" && "$CONTRAST_APP_IDS" != "null" ]]; then
             echo "contrast_app_ids=$CONTRAST_APP_IDS" >> $GITHUB_OUTPUT
             echo "Resolved CONTRAST_APP_IDS: $CONTRAST_APP_IDS"
