@@ -186,7 +186,6 @@ jobs:
     outputs:
       contrast_ci_manifest: ${{ steps.set-outputs.outputs.contrast_ci_manifest }}
       contrast_app_ids:     ${{ steps.set-outputs.outputs.contrast_app_ids }}
-      contrast_app_id:      ${{ steps.set-outputs.outputs.contrast_app_id }}
       contrast_app_name:    ${{ steps.set-outputs.outputs.contrast_app_name }}
     steps:
       - name: Checkout Repository
@@ -232,50 +231,32 @@ jobs:
           echo "Resolver output:"
           echo "$CONTRAST_CI_MANIFEST" | jq .
 
-          # Write manifest to GITHUB_OUTPUT using heredoc delimiter
-          echo "contrast_ci_manifest<<EOF" >> "$GITHUB_OUTPUT"
-          echo "$CONTRAST_CI_MANIFEST" >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
-
-          # CONTRAST_APP_IDS is written to $GITHUB_ENV by the resolver.
-          # Relay it to job output so downstream jobs can read it.
-          if grep -q '^CONTRAST_APP_IDS=' "$GITHUB_ENV" 2>/dev/null; then
-            app_ids=$(grep '^CONTRAST_APP_IDS=' "$GITHUB_ENV" | cut -d= -f2-)
-            echo "contrast_app_ids=$app_ids" >> "$GITHUB_OUTPUT"
-            echo "Resolved CONTRAST_APP_IDS: $app_ids"
-          else
-            echo "::warning::Resolver did not write CONTRAST_APP_IDS to GITHUB_ENV"
-          fi
-
       - name: Set Contrast Application Data Outputs
         id: set-outputs
         shell: bash
         run: |
-          APP_IDS='${{ steps.resolve.outputs.contrast_app_ids }}'
           MANIFEST='${{ steps.resolve.outputs.contrast_ci_manifest }}'
 
-          # Pass through the manifest
+          # Write manifest to job output using heredoc delimiter
           echo "contrast_ci_manifest<<EOF" >> $GITHUB_OUTPUT
           echo "$MANIFEST" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-          if [[ -n "$APP_IDS" && "$APP_IDS" != "null" && "$APP_IDS" != "[]" ]]; then
+          # CONTRAST_APP_IDS is written to $GITHUB_ENV by the resolver.
+          # Relay it to job output so downstream jobs can read it.
+          if grep -q '^CONTRAST_APP_IDS=' "$GITHUB_ENV" 2>/dev/null; then
+            APP_IDS=$(grep '^CONTRAST_APP_IDS=' "$GITHUB_ENV" | cut -d= -f2-)
             echo "contrast_app_ids=$APP_IDS" >> $GITHUB_OUTPUT
-            echo "Resolved application IDs: $APP_IDS"
+            echo "Resolved CONTRAST_APP_IDS: $APP_IDS"
+          else
+            echo "::warning::Resolver did not write CONTRAST_APP_IDS to GITHUB_ENV"
+          fi
 
-            # Extract first app ID from the list for backward compat
-            FIRST_APP_ID=$(echo "$APP_IDS" | jq -r '.[0] // empty')
-            if [[ -n "$FIRST_APP_ID" ]]; then
-              echo "contrast_app_id=$FIRST_APP_ID" >> $GITHUB_OUTPUT
-              echo "First resolved application ID: $FIRST_APP_ID"
-            fi
-
-            # Extract first app name from resolver manifest for SAST backward compat
-            APP_NAME=$(echo "$MANIFEST" | jq -r '[.resolutions[] | select(.appId != null)] | first | .appName // empty')
-            if [[ -n "$APP_NAME" ]]; then
-              echo "contrast_app_name=$APP_NAME" >> $GITHUB_OUTPUT
-              echo "Resolved application name: $APP_NAME"
-            fi
+          # Extract first app name from resolver manifest for SAST backward compat
+          APP_NAME=$(echo "$MANIFEST" | jq -r '[.resolutions[] | select(.appId != null)] | first | .appName // empty')
+          if [[ -n "$APP_NAME" ]]; then
+            echo "contrast_app_name=$APP_NAME" >> $GITHUB_OUTPUT
+            echo "Resolved application name: $APP_NAME"
           fi
 
       - name: Warn if Application ID Not Found
@@ -472,7 +453,6 @@ jobs:
           aws_region:                 ${{ inputs.aws_region }}
           contrast_host:              ${{ inputs.api_host }}
           contrast_org_id:            ${{ inputs.contrast_org_id }}
-          contrast_app_id:            ${{ needs.contrast-recon-resolve.outputs.contrast_app_id || inputs.contrast_application_id }}
           contrast_app_ids:           ${{ needs.contrast-recon-resolve.outputs.contrast_app_ids }}
           contrast_ci_manifest:       ${{ needs.contrast-recon-resolve.outputs.contrast_ci_manifest }}
           base_branch:                ${{ inputs.base_branch }}
