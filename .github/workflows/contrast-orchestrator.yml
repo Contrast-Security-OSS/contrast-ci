@@ -250,7 +250,7 @@ jobs:
           aws-region:            ${{ inputs.aws_region }}
 
       - name: Run Contrast Module Identifier
-        uses: docker://contrast/module-identifier:v1.0.23
+        uses: docker://contrast/module-identifier:v1
         with:
           args: >-
             /github/workspace --single --debug
