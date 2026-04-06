@@ -375,8 +375,7 @@ jobs:
       - name: Run Contrast Code Scanner
         uses: docker://contrast/sast-smartai
         env:
-          # CONTRAST_CI_MANIFEST not yet supported by SAST container — uncomment when ready
-          # CONTRAST_CI_MANIFEST: ${{ needs.contrast-resolve.outputs.contrast_ci_manifest }}
+          CONTRAST_CI_MANIFEST: ${{ needs.contrast-resolve.outputs.contrast_ci_manifest }}
           LOGLEVEL: ${{ runner.debug == '1' && 'DEBUG' || 'INFO' }}
           REPO_NAME: ${{ github.event.repository.name }}
           REPO_LANG_INFO: ${{ steps.parse-langs.outputs.repo_lang_info }}
@@ -413,12 +412,11 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Run Contrast Code Static SCA Scanner
-      # CONTRAST_CI_MANIFEST not yet supported by SCA container — uncomment when ready
-      # Add to docker run above: -e CONTRAST_CI_MANIFEST=${{ needs.contrast-resolve.outputs.contrast_ci_manifest }}
         run: |
           docker run --rm \
             -v ${{ github.workspace }}:/var/app:rw \
             -v /tmp:/tmp:rw \
+            -e CONTRAST_CI_MANIFEST=${{ needs.contrast-resolve.outputs.contrast_ci_manifest }} \
             -e GITHUB_TOKEN=${{ secrets.GH_TOKEN }} \
             -e CDXGEN_DEBUG_MODE=true \
             contrast/sca-smartai:latest \
