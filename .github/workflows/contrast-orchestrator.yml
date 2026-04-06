@@ -505,7 +505,7 @@ jobs:
           azure_api_base:             ${{ inputs.azure_api_base }}
           azure_api_version:          ${{ inputs.azure_api_version }}
           enable_full_telemetry:      ${{ inputs.enable_full_telemetry }}
-          debug_mode:                 ${{ inputs.debug_mode }}
+          debug_mode:                 ${{ runner.debug == '1' && 'true' || inputs.debug_mode }}
           coding_agent:               ${{ inputs.coding_agent }}
           contrast_api_key:           ${{ secrets.CONTRAST_API_KEY }}
           contrast_authorization_key: ${{ secrets.CONTRAST_AUTHORIZATION }}
