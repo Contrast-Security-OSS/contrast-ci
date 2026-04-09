@@ -21,13 +21,13 @@ on:
         description: Manual override for the Contrast application UUID (skips auto-detection)
       run_triage:
         required: false
-        type: boolean
-        default: true
+        type: string
+        default: 'True'
         description: Whether to run contrast-triage feature in SmartScan
       triage_duration:
         required: false
         type: string
-        default: '20s'
+        default: '30s'
         description: Duration to run the contrast-triage tool (e.g. '1m', '5m').
 
       # --- Repo Context (required) ---
