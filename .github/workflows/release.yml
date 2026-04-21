@@ -34,6 +34,12 @@ jobs:
             LATEST="v0.0.0"
           fi
 
+          COMMITS_SINCE=$(git log "${LATEST}..HEAD" --oneline | wc -l)
+          if [ "$COMMITS_SINCE" -eq 0 ]; then
+            echo "No new commits since ${LATEST}. Nothing to release."
+            exit 1
+          fi
+
           CURRENT="${LATEST#v}"
           IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
 
@@ -61,7 +67,9 @@ jobs:
 
       - name: Update floating major version tag
         run: |
+          git fetch --tags
           MAJOR_TAG="${{ steps.version.outputs.major }}"
           NEW_VERSION="${{ steps.version.outputs.version }}"
           git tag -fa "${MAJOR_TAG}" "${NEW_VERSION}" -m "${MAJOR_TAG} -> ${NEW_VERSION}"
           git push origin "${MAJOR_TAG}" --force
+
