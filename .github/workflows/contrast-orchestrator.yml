@@ -412,11 +412,12 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Run Contrast Code Static SCA Scanner
+      # CONTRAST_CI_MANIFEST not yet supported by SCA container — uncomment when ready
+      # Add to docker run above: -e CONTRAST_CI_MANIFEST=${{ needs.contrast-resolve.outputs.contrast_ci_manifest }}
         run: |
           docker run --rm \
             -v ${{ github.workspace }}:/var/app:rw \
             -v /tmp:/tmp:rw \
-            -e CONTRAST_CI_MANIFEST=${{ needs.contrast-resolve.outputs.contrast_ci_manifest }} \
             -e GITHUB_TOKEN=${{ secrets.GH_TOKEN }} \
             -e CDXGEN_DEBUG_MODE=true \
             contrast/sca-smartai:latest \
