@@ -292,9 +292,9 @@ jobs:
       - name: Set Contrast Application Data Outputs
         id: set-outputs
         shell: bash
+        env:
+          CONTRAST_CI_MANIFEST: ${{ steps.resolve.outputs.contrast_ci_manifest }}
         run: |
-          CONTRAST_CI_MANIFEST='${{ steps.resolve.outputs.contrast_ci_manifest }}'
-
           # Write manifest to job output using heredoc delimiter
           echo "contrast_ci_manifest<<EOF" >> $GITHUB_OUTPUT
           echo "$CONTRAST_CI_MANIFEST" >> $GITHUB_OUTPUT
