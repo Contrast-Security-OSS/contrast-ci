@@ -196,6 +196,12 @@ jobs:
           CONTRAST_API_KEY: ${{ secrets.CONTRAST_API_KEY }}
           CONTRAST_AUTH_TOKEN: ${{ secrets.CONTRAST_AUTHORIZATION }}
           GITHUB_DEFAULT_BRANCH: ${{ inputs.base_branch }}
+          GITHUB_REPOSITORY: ${{ inputs.repo_name }}
+          GITHUB_SERVER_URL: ${{ inputs.repo_url }}
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_REF: ${{ github.ref }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_WORKFLOW: ${{ github.workflow }}
         run: |
           CONTRAST_CI_MANIFEST=$(docker run --rm \
             --user "$(id -u):$(id -g)" \
@@ -204,6 +210,12 @@ jobs:
             -e CONTRAST_API_KEY \
             -e CONTRAST_AUTH_TOKEN \
             -e GITHUB_DEFAULT_BRANCH \
+            -e GITHUB_REPOSITORY \
+            -e GITHUB_SERVER_URL \
+            -e GITHUB_SHA \
+            -e GITHUB_REF \
+            -e GITHUB_RUN_ID \
+            -e GITHUB_WORKFLOW \
             -v "${{ github.workspace }}:/workspace" \
             contrast/contrast-recon:latest /workspace)
 
@@ -251,6 +263,8 @@ jobs:
           CONTRAST_API_KEY: ${{ secrets.CONTRAST_API_KEY }}
           CONTRAST_AUTH_TOKEN: ${{ secrets.CONTRAST_AUTHORIZATION }}
           GITHUB_DEFAULT_BRANCH: ${{ inputs.base_branch }}
+          GITHUB_REPOSITORY: ${{ inputs.repo_name }}
+          GITHUB_SERVER_URL: ${{ inputs.repo_url }}
         run: |
           CONTRAST_CI_MANIFEST=$(echo '${{ needs.contrast-recon.outputs.contrast_ci_manifest }}' | \
           docker run --rm -i \
@@ -260,6 +274,8 @@ jobs:
             -e CONTRAST_API_KEY \
             -e CONTRAST_AUTH_TOKEN \
             -e GITHUB_DEFAULT_BRANCH \
+            -e GITHUB_REPOSITORY \
+            -e GITHUB_SERVER_URL \
             -e GITHUB_ENV="$GITHUB_ENV" \
             -v "$(dirname $GITHUB_ENV):$(dirname $GITHUB_ENV)" \
             --entrypoint contrast-resolver \
