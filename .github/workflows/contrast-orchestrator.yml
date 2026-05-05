@@ -89,7 +89,7 @@ on:
       use_contrast_llm:
         description: "Indicates to use Contrast internal LLM"
         type: string
-        default: 'true'
+        default: 'false'
       agent_model:
         description: 'The provider LLM model to use'
         type: string
