@@ -364,7 +364,7 @@ jobs:
           fi
 
       - name: Run Contrast Code Scanner
-        uses: docker://contrast/sast-smartai
+        uses: docker://contrast/sast-smartai@sha256:6d498add5b532f8f98aa1023c8e0027bac86f1bccb74df37a36679191ba7207a
         env:
           CONTRAST_CI_MANIFEST: ${{ needs.contrast-resolve.outputs.contrast_ci_manifest }}
           LOGLEVEL: ${{ runner.debug == '1' && 'DEBUG' || 'INFO' }}
@@ -478,7 +478,7 @@ jobs:
           aws-region:            ${{ inputs.aws_region }}
 
       - name: ${{ steps.job_type.outputs.label }}
-        uses: Contrast-Security-OSS/contrast-ai-smartfix-action@v1
+        uses: Contrast-Security-OSS/contrast-ai-smartfix-action@020b093708b41844d005aa869aea45f9b64bea7d # v1.0.16
         with:
           aws_region:                 ${{ inputs.aws_region }}
           contrast_host:              ${{ inputs.api_host }}
