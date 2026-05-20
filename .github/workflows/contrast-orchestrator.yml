@@ -19,15 +19,10 @@ on:
         type: string
         default: ''
         description: Manual override for the Contrast application UUID (skips auto-detection)
-      run_triage:
-        required: false
-        type: string
-        default: 'True'
-        description: Whether to run contrast-triage feature in SmartScan
       triage_duration:
         required: false
         type: string
-        default: '30s'
+        default: '1m'
         description: Duration to run the contrast-triage tool (e.g. '1m', '5m').
 
       # --- Repo Context (required) ---
@@ -43,20 +38,6 @@ on:
         required: true
         type: string
         description: Repository full name (owner/repo)
-
-      # --- EA Product Disable Flags ---
-      disable_contrast_code:
-        type: string
-        default: 'false'
-        description: Set to true to skip Contrast Code for this repo
-      disable_contrast_sca:
-        type: string
-        default: 'false'
-        description: Set to true to skip Static SCA scan for this repo
-      disable_smartfix:
-        type: string
-        default: 'false'
-        description: Set to true to skip SmartFix for this repo
 
       # --- SmartFix Config ---
       coding_agent:
@@ -160,14 +141,73 @@ permissions:
 jobs:
 
   # ─────────────────────────────────────────────────────────────────────
-  # JOB 1: Detect Modules via Contrast Recon
+  # JOB 1: Get Repository Config
+  # Fetches enabled features for this repo from the Contrast backend.
+  # All downstream jobs gate on these outputs.
+  # ─────────────────────────────────────────────────────────────────────
+  get-repo-config:
+    name: Get Repository Config
+    runs-on: ${{ inputs.github_runner }}
+    outputs:
+      sast_enabled:      ${{ steps.fetch-config.outputs.sast_enabled }}
+      sca_enabled:       ${{ steps.fetch-config.outputs.sca_enabled }}
+      smartfix_enabled:  ${{ steps.fetch-config.outputs.smartfix_enabled }}
+      ai_triage_enabled: ${{ steps.fetch-config.outputs.ai_triage_enabled }}
+    steps:
+      - name: Fetch Repository Config
+        id: fetch-config
+        env:
+          API_HOST:               ${{ inputs.api_host }}
+          ORG_ID:                 ${{ inputs.contrast_org_id }}
+          REPO_URL:               ${{ inputs.repo_url }}/${{ inputs.repo_name }}
+          CONTRAST_API_KEY:       ${{ secrets.CONTRAST_API_KEY }}
+          CONTRAST_AUTHORIZATION: ${{ secrets.CONTRAST_AUTHORIZATION }}
+        run: |
+          HTTP_CODE=$(curl -s -G \
+            --data-urlencode "repositoryUrl=${REPO_URL}" \
+            --retry 3 --retry-delay 5 --retry-connrefused \
+            -o /tmp/repo_config.json \
+            -w "%{http_code}" \
+            -H "API-Key: ${CONTRAST_API_KEY}" \
+            -H "Authorization: ${CONTRAST_AUTHORIZATION}" \
+            "${API_HOST}/api/entities/v1/organizations/${ORG_ID}/repositories/config")
+
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "::error::Failed to fetch repository config from Contrast API (HTTP ${HTTP_CODE})."
+            echo "::error::URL: ${API_HOST}/api/entities/v1/organizations/${ORG_ID}/repositories/config?repositoryUrl=${REPO_URL}"
+            echo "::error::Response: $(cat /tmp/repo_config.json)"
+            exit 1
+          fi
+
+          SAST_ENABLED=$(jq -r '.sastEnabled'        /tmp/repo_config.json)
+          SCA_ENABLED=$(jq -r '.scaEnabled'          /tmp/repo_config.json)
+          SMARTFIX_ENABLED=$(jq -r '.smartfixEnabled'   /tmp/repo_config.json)
+          AI_TRIAGE_ENABLED=$(jq -r '.aiTriageEnabled'  /tmp/repo_config.json)
+
+          echo "sast_enabled=${SAST_ENABLED}"           >> "$GITHUB_OUTPUT"
+          echo "sca_enabled=${SCA_ENABLED}"             >> "$GITHUB_OUTPUT"
+          echo "smartfix_enabled=${SMARTFIX_ENABLED}"   >> "$GITHUB_OUTPUT"
+          echo "ai_triage_enabled=${AI_TRIAGE_ENABLED}" >> "$GITHUB_OUTPUT"
+
+          echo "Repository Config:"
+          echo "  SAST Enabled:      ${SAST_ENABLED}"
+          echo "  SCA Enabled:       ${SCA_ENABLED}"
+          echo "  SmartFix Enabled:  ${SMARTFIX_ENABLED}"
+          echo "  AI Triage Enabled: ${AI_TRIAGE_ENABLED}"
+
+  # ─────────────────────────────────────────────────────────────────────
+  # JOB 2: Detect Modules via Contrast Recon
   # Runs contrast-recon to discover repository modules and outputs the
   # manifest for the resolver job.
   # ─────────────────────────────────────────────────────────────────────
   contrast-recon:
     name: Detect Modules
+    needs: get-repo-config
     if: |
-      (inputs.disable_contrast_code != 'true' || inputs.disable_smartfix != 'true') &&
+      (
+        needs.get-repo-config.outputs.sast_enabled == 'true' ||
+        needs.get-repo-config.outputs.smartfix_enabled == 'true'
+      ) &&
       (
         github.event_name == 'push' ||
         github.event_name == 'schedule' ||
@@ -227,7 +267,7 @@ jobs:
           echo "EOF" >> "$GITHUB_OUTPUT"
 
   # ─────────────────────────────────────────────────────────────────────
-  # JOB 2: Resolve Applications via Contrast Resolver
+  # JOB 3: Resolve Applications via Contrast Resolver
   # Pipes the recon manifest to contrast-resolver to resolve modules to
   # Contrast application IDs.
   # ─────────────────────────────────────────────────────────────────────
@@ -331,26 +371,29 @@ jobs:
           echo "::warning::${MSG}"
 
   # ─────────────────────────────────────────────────────────────────────
-  # JOB 3: Run Contrast Code Scanner
-  # Skipped if disable_contrast_code is 'true'.
+  # JOB 4: Run Contrast Code Scanner
+  # Skipped if sastEnabled is false in the repository config.
   # ─────────────────────────────────────────────────────────────────────
   run-contrast-code:
     name: Code - SAST
-    needs: contrast-resolve
+    needs:
+      - contrast-resolve
+      - get-repo-config
     if: |
-      inputs.disable_contrast_code != 'true' &&
+      needs.get-repo-config.outputs.sast_enabled == 'true' &&
       (github.event_name == 'push' && github.ref == format('refs/heads/{0}', inputs.base_branch))
     runs-on: ${{ inputs.github_runner }}
     steps:
-      #- name: Configure AWS Credentials
-      #if: ${{ inputs.use_aws_creds_action == 'true' && inputs.aws_region != '' }}
-      #uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5.1.1
-      #with:
-      #aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
-      #aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      #aws-session-token:     ${{ secrets.AWS_SESSION_TOKEN }}
-      #role-to-assume:        ${{ secrets.AWS_ROLE_TO_ASSUME }}
-      #aws-region:            ${{ inputs.aws_region }}
+      - name: Configure AWS Credentials
+        if: ${{ inputs.use_aws_creds_action == 'true' && inputs.aws_region != '' }}
+        id: aws-credentials
+        uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5.1.1
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token:     ${{ secrets.AWS_SESSION_TOKEN }}
+          role-to-assume:        ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region:            ${{ inputs.aws_region }}
 
       - name: Checkout Repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -381,19 +424,21 @@ jobs:
           CONTRAST_ORG_ID: ${{ inputs.contrast_org_id }}
           CONTRAST_API_KEY: ${{ secrets.CONTRAST_API_KEY }}
           CONTRAST_AUTHORIZATION: ${{ secrets.CONTRAST_AUTHORIZATION }}
-          RUN_TRIAGE: ${{ inputs.run_triage }}
+          RUN_TRIAGE: ${{ needs.get-repo-config.outputs.ai_triage_enabled }}
           TRIAGE_DURATION: ${{ inputs.triage_duration }}
           APPLICATION_DIR: ${{ github.workspace }}
 
   # ─────────────────────────────────────────────────────────────────────
-  # JOB 4: Run Contrast SCA
-  # SCA dependency scanning. Skipped if disable_contrast_sca is 'true'.
+  # JOB 5: Run Contrast SCA
+  # SCA dependency scanning. Skipped if scaEnabled is false in the repository config.
   # ─────────────────────────────────────────────────────────────────────
   run-sca:
     name: Code - Static SCA
-    needs: contrast-resolve
+    needs:
+      - contrast-resolve
+      - get-repo-config
     if: |
-      inputs.disable_contrast_sca != 'true' &&
+      needs.get-repo-config.outputs.sca_enabled == 'true' &&
       (github.event_name == 'push' && github.ref == format('refs/heads/{0}', inputs.base_branch))
     runs-on: ${{ inputs.github_runner }}
     steps:
@@ -428,7 +473,7 @@ jobs:
             -F "file=@/tmp/sbom.json;type=application/json"
 
   # ─────────────────────────────────────────────────────────────────────
-  # JOB 5: Run Contrast SmartFix
+  # JOB 6: Run Contrast SmartFix
   # AI-powered fix PR generation. Event-gated — only runs on:
   #   • pull_request (closed) — handles merge notification or PR close
   #   • workflow_dispatch     — manual trigger to generate fixes
@@ -437,9 +482,11 @@ jobs:
   # ─────────────────────────────────────────────────────────────────────
   run-smartfix:
     name: SmartFix
-    needs: contrast-resolve
+    needs:
+      - contrast-resolve
+      - get-repo-config
     if: |
-      inputs.disable_smartfix != 'true' &&
+      needs.get-repo-config.outputs.smartfix_enabled == 'true' &&
       (needs.contrast-resolve.outputs.contrast_app_ids != '' || inputs.contrast_application_id != '') &&
       (
         github.event_name == 'workflow_dispatch' ||
@@ -468,6 +515,7 @@ jobs:
 
       - name: Configure AWS Credentials
         if: ${{ inputs.use_aws_creds_action == 'true' && inputs.aws_region != '' }}
+        id: aws-credentials
         uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5.1.1
         with:
           output-env-credentials: true
