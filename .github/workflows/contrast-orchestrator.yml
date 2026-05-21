@@ -206,6 +206,7 @@ jobs:
     if: |
       (
         needs.get-repo-config.outputs.sast_enabled == 'true' ||
+        needs.get-repo-config.outputs.sca_enabled == 'true' ||
         needs.get-repo-config.outputs.smartfix_enabled == 'true'
       ) &&
       (
