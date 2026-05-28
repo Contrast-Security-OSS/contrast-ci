@@ -14,7 +14,7 @@ on:
         description: Contrast organization UUID
 
       # --- Contrast Platform (optional override) ---
-      contrast_application_id:
+      contrast_app_id:
         required: false
         type: string
         default: ''
@@ -274,12 +274,13 @@ jobs:
   # ─────────────────────────────────────────────────────────────────────
   contrast-resolve:
     name: Resolve Applications
-    needs: contrast-recon
+    needs:
+      - get-repo-config
+      - contrast-recon
     runs-on: ${{ inputs.github_runner }}
     outputs:
       contrast_ci_manifest: ${{ steps.set-outputs.outputs.contrast_ci_manifest }}
       contrast_app_ids:     ${{ steps.set-outputs.outputs.contrast_app_ids }}
-      contrast_app_name:    ${{ steps.set-outputs.outputs.contrast_app_name }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -350,12 +351,22 @@ jobs:
             echo "Resolver did not find any contrast applications associated with this repo"
           fi
 
-          # Extract first app name from resolver manifest for SAST backward compat
-          APP_NAME=$(echo "$CONTRAST_CI_MANIFEST" | jq -r '[.resolutions[] | select(.appId != null)] | first | .appName // empty')
-          if [[ -n "$APP_NAME" ]]; then
-            echo "contrast_app_name=$APP_NAME" >> $GITHUB_OUTPUT
-            echo "Resolved application name: $APP_NAME"
-          fi
+      - name: Warn if Application ID Not Found
+        if: ${{ needs.get-repo-config.outputs.smartfix_enabled == 'true' && 
+            (steps.set-outputs.outputs.contrast_app_ids == '' || steps.set-outputs.outputs.contrast_app_ids == '[]') && 
+            inputs.contrast_application_id == '' }}
+        shell: bash
+        run: |
+          MSG="Contrast application ID could not be automatically detected for repository '${{ inputs.repo_name }}'."
+          MSG="${MSG}%0AMake sure this repository is instrumented by the Contrast Agent so that it has IAST findings in Contrast."
+          MSG="${MSG}%0ASmartFix will be skipped."
+          MSG="${MSG}%0A%0ATo set the application ID manually, add 'contrast_app_id' to your workflow inputs:"
+          MSG="${MSG}%0A  1. Browse your applications:"
+          MSG="${MSG}%0A     ${{ inputs.api_host }}/Contrast/static/ng/index.html#/${{ inputs.contrast_org_id }}/applications"
+          MSG="${MSG}%0A  2. Select your application"
+          MSG="${MSG}%0A  3. The ID is the UUID after applications/ in the URL"
+          MSG="${MSG}%0A     e.g. applications/057254e6-f065-40fa-8197-e1d7ace10e67"
+          echo "::warning::${MSG}"
 
   # ─────────────────────────────────────────────────────────────────────
   # JOB 4: Run Contrast Code Scanner
@@ -475,6 +486,10 @@ jobs:
     if: |
       needs.get-repo-config.outputs.smartfix_enabled == 'true' &&
       (
+        (needs.contrast-resolve.outputs.contrast_app_ids != '' && needs.contrast-resolve.outputs.contrast_app_ids != '[]') ||
+        inputs.contrast_application_id != ''
+      ) &&
+      (
         github.event_name == 'workflow_dispatch' ||
         github.event_name == 'schedule' ||
         (
@@ -488,30 +503,8 @@ jobs:
       )
     runs-on: ${{ inputs.github_runner }}
     steps:
-      - name: Check Application ID
-        id: check-app-id
-        env:
-          CONTRAST_APP_IDS: ${{ needs.contrast-resolve.outputs.contrast_app_ids }}
-          CONTRAST_APPLICATION_ID: ${{ inputs.contrast_application_id }}
-        run: |
-          if [[ ("$CONTRAST_APP_IDS" == "" || "$CONTRAST_APP_IDS" == "[]") && "$CONTRAST_APPLICATION_ID" == "" ]]; then
-            MSG="Contrast application ID could not be automatically detected for repository '${{ inputs.repo_name }}'."
-            MSG="${MSG} SmartFix will be skipped."
-            MSG="${MSG}%0A%0ATo set the application ID manually, add 'contrast_application_id' to your workflow inputs:"
-            MSG="${MSG}%0A  1. Browse your applications:"
-            MSG="${MSG}%0A     ${{ inputs.api_host }}/Contrast/static/ng/index.html#/${{ inputs.contrast_org_id }}/applications"
-            MSG="${MSG}%0A  2. Select your application"
-            MSG="${MSG}%0A  3. The ID is the UUID after applications/ in the URL"
-            MSG="${MSG}%0A     e.g. applications/057254e6-f065-40fa-8197-e1d7ace10e67"
-            echo "::warning::${MSG}"
-            echo "has_app_id=false" >> $GITHUB_OUTPUT
-          else
-            echo "has_app_id=true" >> $GITHUB_OUTPUT
-          fi
-
       - name: Determine SmartFix Job Type
         id: job_type
-        if: steps.check-app-id.outputs.has_app_id == 'true'
         run: |
           if [[ "${{ github.event.pull_request.merged }}" == "true" ]]; then
             echo "label=Notify Contrast on PR Merge" >> $GITHUB_OUTPUT
@@ -522,7 +515,7 @@ jobs:
           fi
 
       - name: Configure AWS Credentials
-        if: ${{ steps.check-app-id.outputs.has_app_id == 'true' && inputs.use_aws_creds_action == 'true' && inputs.aws_region != '' }}
+        if: ${{ inputs.use_aws_creds_action == 'true' && inputs.aws_region != '' }}
         id: aws-credentials
         uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5.1.1
         with:
@@ -534,13 +527,12 @@ jobs:
           aws-region:            ${{ inputs.aws_region }}
 
       - name: ${{ steps.job_type.outputs.label }}
-        if: steps.check-app-id.outputs.has_app_id == 'true'
         uses: Contrast-Security-OSS/contrast-ai-smartfix-action@v1
         with:
           aws_region:                 ${{ inputs.aws_region }}
           contrast_host:              ${{ inputs.api_host }}
           contrast_org_id:            ${{ inputs.contrast_org_id }}
-          contrast_app_id:            ${{ inputs.contrast_application_id }}
+          contrast_app_id:            ${{ inputs.contrast_app_id }}
           contrast_app_ids:           ${{ needs.contrast-resolve.outputs.contrast_app_ids }}
           base_branch:                ${{ inputs.base_branch }}
           build_command:              ${{ inputs.build_command }}
