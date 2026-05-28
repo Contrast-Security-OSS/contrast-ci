@@ -14,7 +14,7 @@ on:
         description: Contrast organization UUID
 
       # --- Contrast Platform (optional override) ---
-      contrast_application_id:
+      contrast_app_id:
         required: false
         type: string
         default: ''
@@ -274,7 +274,9 @@ jobs:
   # ─────────────────────────────────────────────────────────────────────
   contrast-resolve:
     name: Resolve Applications
-    needs: contrast-recon
+    needs:
+      - get-repo-config
+      - contrast-recon
     runs-on: ${{ inputs.github_runner }}
     outputs:
       contrast_ci_manifest: ${{ steps.set-outputs.outputs.contrast_ci_manifest }}
@@ -350,12 +352,15 @@ jobs:
           fi
 
       - name: Warn if Application ID Not Found
-        if: ${{ (steps.set-outputs.outputs.contrast_app_ids == '' || steps.set-outputs.outputs.contrast_app_ids == '[]') && inputs.contrast_application_id == '' }}
+        if: ${{ needs.get-repo-config.outputs.smartfix_enabled == 'true' && 
+            (steps.set-outputs.outputs.contrast_app_ids == '' || steps.set-outputs.outputs.contrast_app_ids == '[]') && 
+            inputs.contrast_application_id == '' }}
         shell: bash
         run: |
           MSG="Contrast application ID could not be automatically detected for repository '${{ inputs.repo_name }}'."
-          MSG="${MSG} SmartFix will be skipped."
-          MSG="${MSG}%0A%0ATo set the application ID manually, add 'contrast_application_id' to your workflow inputs:"
+          MSG="${MSG}%0AMake sure this repository is instrumented by the Contrast Agent so that it has IAST findings in Contrast."
+          MSG="${MSG}%0ASmartFix will be skipped."
+          MSG="${MSG}%0A%0ATo set the application ID manually, add 'contrast_app_id' to your workflow inputs:"
           MSG="${MSG}%0A  1. Browse your applications:"
           MSG="${MSG}%0A     ${{ inputs.api_host }}/Contrast/static/ng/index.html#/${{ inputs.contrast_org_id }}/applications"
           MSG="${MSG}%0A  2. Select your application"
@@ -527,7 +532,7 @@ jobs:
           aws_region:                 ${{ inputs.aws_region }}
           contrast_host:              ${{ inputs.api_host }}
           contrast_org_id:            ${{ inputs.contrast_org_id }}
-          contrast_app_id:            ${{ inputs.contrast_application_id }}
+          contrast_app_id:            ${{ inputs.contrast_app_id }}
           contrast_app_ids:           ${{ needs.contrast-resolve.outputs.contrast_app_ids }}
           base_branch:                ${{ inputs.base_branch }}
           build_command:              ${{ inputs.build_command }}
