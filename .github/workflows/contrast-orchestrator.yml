@@ -227,7 +227,7 @@ jobs:
       contrast_ci_manifest: ${{ steps.recon.outputs.contrast_ci_manifest }}
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Run Contrast Recon
         id: recon
@@ -283,7 +283,7 @@ jobs:
       contrast_app_ids:     ${{ steps.set-outputs.outputs.contrast_app_ids }}
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Configure AWS Credentials
         if: ${{ inputs.use_aws_creds_action == 'true' && inputs.aws_region != '' }}
@@ -394,7 +394,7 @@ jobs:
           aws-region:            ${{ inputs.aws_region }}
 
       - name: Checkout Repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Set Branch Name
         run: |
@@ -441,7 +441,7 @@ jobs:
     runs-on: ${{ inputs.github_runner }}
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Run Contrast Code Static SCA Scanner
         env:
