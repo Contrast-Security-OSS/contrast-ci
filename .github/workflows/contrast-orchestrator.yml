@@ -98,6 +98,20 @@ on:
         type: string
         default: 'ubuntu-latest'
 
+      # --- DEPRECATED EA Product Disable Flags ---
+      disable_contrast_code:
+        type: string
+        required: false
+        description: '[DEPRECATED] This input is no longer used and can be safely removed from your workflow.'
+      disable_contrast_sca:
+        type: string
+        required: false
+        description: '[DEPRECATED] This input is no longer used and can be safely removed from your workflow.'
+      disable_smartfix:
+        type: string
+        required: false
+        description: '[DEPRECATED] This input is no longer used and can be safely removed from your workflow.'
+
     secrets:
       CONTRAST_API_KEY:
         description: The contrast API key
