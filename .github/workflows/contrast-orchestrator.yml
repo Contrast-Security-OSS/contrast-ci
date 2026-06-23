@@ -419,7 +419,6 @@ jobs:
           fi
 
       - name: Run Contrast Code Scanner
-        uses: docker://contrast/sast-smartai
         env:
           CONTRAST_CI_MANIFEST: ${{ needs.contrast-resolve.outputs.contrast_ci_manifest }}
           LOGLEVEL: ${{ runner.debug == '1' && 'DEBUG' || 'INFO' }}
@@ -438,7 +437,28 @@ jobs:
           CONTRAST_AUTHORIZATION: ${{ secrets.CONTRAST_AUTHORIZATION }}
           RUN_TRIAGE: ${{ needs.get-repo-config.outputs.ai_triage_enabled }}
           TRIAGE_DURATION: ${{ inputs.triage_duration }}
-          APPLICATION_DIR: ${{ github.workspace }}
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}:/workspace:rw \
+            -e CONTRAST_CI_MANIFEST \
+            -e LOGLEVEL \
+            -e REPO_NAME \
+            -e REPO_HTTP_URL \
+            -e BRANCH_NAME \
+            -e DEFAULT_BRANCH \
+            -e COMMIT_HASH \
+            -e COMMITTER \
+            -e TAG \
+            -e RUN_ID \
+            -e WORKFLOW_ID \
+            -e CONTRAST_BASE_URL \
+            -e CONTRAST_ORG_ID \
+            -e CONTRAST_API_KEY \
+            -e CONTRAST_AUTHORIZATION \
+            -e RUN_TRIAGE \
+            -e TRIAGE_DURATION \
+            -e APPLICATION_DIR=/workspace \
+            contrast/sast-smartai:latest
 
   # ─────────────────────────────────────────────────────────────────────
   # JOB 5: Run Contrast SCA
