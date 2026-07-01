@@ -518,7 +518,7 @@ jobs:
       - contrast-resolve
       - get-repo-config
     # No application-id gate here: SmartFix runs whenever it is enabled and the event matches.
-    # When no application ID is resolved (or set manually), the action runs in SAST-only mode to
+    # When no application ID is resolved or set manually, the action runs in SAST-only mode to
     # remediate repository-level static findings for NorthStar-only organizations.
     if: |
       needs.get-repo-config.outputs.smartfix_enabled == 'true' &&
