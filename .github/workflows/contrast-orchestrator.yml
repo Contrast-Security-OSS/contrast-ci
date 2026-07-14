@@ -366,14 +366,14 @@ jobs:
           fi
 
       - name: Warn if Application ID Not Found
-        if: ${{ needs.get-repo-config.outputs.smartfix_enabled == 'true' && 
-            (steps.set-outputs.outputs.contrast_app_ids == '' || steps.set-outputs.outputs.contrast_app_ids == '[]') && 
-            inputs.contrast_application_id == '' }}
+        if: ${{ needs.get-repo-config.outputs.smartfix_enabled == 'true' &&
+            (steps.set-outputs.outputs.contrast_app_ids == '' || steps.set-outputs.outputs.contrast_app_ids == '[]') &&
+            inputs.contrast_app_id == '' }}
         shell: bash
         run: |
           MSG="Contrast application ID could not be automatically detected for repository '${{ inputs.repo_name }}'."
           MSG="${MSG}%0AMake sure this repository is instrumented by the Contrast Agent so that it has IAST findings in Contrast."
-          MSG="${MSG}%0ASmartFix will be skipped."
+          MSG="${MSG}%0ASmartFix will still run and attempt to remediate repository-level static (SAST) findings for NorthStar-only organizations, but it will not address IAST vulnerabilities without an application ID."
           MSG="${MSG}%0A%0ATo set the application ID manually, add 'contrast_app_id' to your workflow inputs:"
           MSG="${MSG}%0A  1. Browse your applications:"
           MSG="${MSG}%0A     ${{ inputs.api_host }}/Contrast/static/ng/index.html#/${{ inputs.contrast_org_id }}/applications"
@@ -517,12 +517,11 @@ jobs:
     needs:
       - contrast-resolve
       - get-repo-config
+    # No application-id gate here: SmartFix runs whenever it is enabled and the event matches.
+    # When no application ID is resolved or set manually, the action runs in SAST-only mode to
+    # remediate repository-level static findings for NorthStar-only organizations.
     if: |
       needs.get-repo-config.outputs.smartfix_enabled == 'true' &&
-      (
-        (needs.contrast-resolve.outputs.contrast_app_ids != '' && needs.contrast-resolve.outputs.contrast_app_ids != '[]') ||
-        inputs.contrast_application_id != ''
-      ) &&
       (
         github.event_name == 'workflow_dispatch' ||
         github.event_name == 'schedule' ||
