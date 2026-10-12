@@ -46,9 +46,9 @@ on:
         required: false
         default: 'SMARTFIX'
       build_command:
-        description: 'Build command to run before SmartFix'
+        description: 'Build command to run before SmartFix (auto-detected if not provided)'
         type: string
-        default: 'echo No build command specified.'
+        default: ''
       formatting_command:
         description: 'Format command to run before SmartFix'
         type: string
